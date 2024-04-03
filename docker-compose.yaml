@@ -9,11 +9,28 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
     ports:
-      - ${DB_PORT}:${DB_PORT}
+      - '127.0.0.1:${DB_PORT}:${DB_PORT}'
     volumes:
       - postgres-db:/var/lib/postgresql/data
     command: ['postgres', '-c', 'log_statement=all']
 
+  pgAdmin:
+    image: dpage/pgadmin4:8.4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@email.com
+      PGADMIN_DEFAULT_PASSWORD: password
+      PGADMIN_LISTEN_PORT: 5050
+    ports:
+      - '127.0.0.1:5050:5050'
+    depends_on:
+      - db
+    volumes:
+        - pg-admin-data:/pgadmin4/servers.json
+    logging:
+      driver: none
+
 volumes:
   postgres-db:
     name: postgres-db
+  pg-admin-data:
+    name: pg-admin-data

@@ -1,0 +1,13 @@
+{
+  "name": "golang-template",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "api": "CompileDaemon -directory=apps/api/cmd/server -command=apps/api/cmd/server/server",
+    "cms": "pnpm run --filter=cms dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

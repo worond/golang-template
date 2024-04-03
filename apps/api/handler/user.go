@@ -3,6 +3,7 @@ package handler
 import (
 	"app/database"
 	"app/model"
+	"fmt"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
@@ -41,11 +42,27 @@ func validUser(id string, p string) bool {
 	return true
 }
 
+func GetUsers(c *fiber.Ctx) error {
+	sort := c.Query("sort")
+	page := c.Query("range")
+	filter := c.Query("filter")
+	fmt.Println(sort, page, filter)
+	db := database.DB
+	var users []model.User
+	var count int64
+	
+	db.Order(sort).Find(&users)
+	db.Model(&model.User{}).Count(&count)
+
+	return c.JSON(fiber.Map{"data": users, "total": count})
+}
+
 // GetUser get a user
 func GetUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 	db := database.DB
 	var user model.User
+
 	db.Find(&user, id)
 	if user.Username == "" {
 		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "No user found with ID", "data": nil})
