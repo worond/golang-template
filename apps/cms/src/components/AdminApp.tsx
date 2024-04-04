@@ -1,32 +1,17 @@
 "use client";
-import {
-  Admin,
-  Resource,
-  ListGuesser,
-  EditGuesser,
-  radiantLightTheme,
-} from "react-admin";
+import { Admin, Resource, ListGuesser, EditGuesser } from "react-admin";
 import { authProvider, dataProvider } from "../providers";
+import { UserCreate, UserList, UserEdit } from "./users";
 
 const AdminApp = () => (
-  <Admin
-    theme={radiantLightTheme}
-    authProvider={authProvider}
-    dataProvider={dataProvider}
-  >
+  <Admin authProvider={authProvider} dataProvider={dataProvider}>
     <Resource
       name="users"
-      list={ListGuesser}
-      edit={EditGuesser}
+      list={UserList}
+      edit={UserEdit}
+      create={UserCreate}
       recordRepresentation="name"
     />
-    <Resource
-      name="posts"
-      list={ListGuesser}
-      edit={EditGuesser}
-      recordRepresentation="title"
-    />
-    <Resource name="comments" list={ListGuesser} edit={EditGuesser} />
   </Admin>
 );
 

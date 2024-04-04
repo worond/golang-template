@@ -35,10 +35,10 @@ func getUserByEmail(e string) (*model.User, error) {
 	return &user, nil
 }
 
-func getUserByUsername(u string) (*model.User, error) {
+func getUserByName(u string) (*model.User, error) {
 	db := database.DB
 	var user model.User
-	if err := db.Where(&model.User{Username: u}).First(&user).Error; err != nil {
+	if err := db.Where(&model.User{Name: u}).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -60,7 +60,7 @@ func Login(c *fiber.Ctx) error {
 	}
 	type UserData struct {
 		ID       uint   `json:"id"`
-		Username string `json:"username"`
+		Name     string `json:"name"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
@@ -78,7 +78,7 @@ func Login(c *fiber.Ctx) error {
 	if valid(identity) {
 		userModel, err = getUserByEmail(identity)
 	} else {
-		userModel, err = getUserByUsername(identity)
+		userModel, err = getUserByName(identity)
 	}
 
 	if err != nil {
@@ -89,7 +89,7 @@ func Login(c *fiber.Ctx) error {
 	} else {
 		ud = UserData{
 			ID:       userModel.ID,
-			Username: userModel.Username,
+			Name:     userModel.Name,
 			Email:    userModel.Email,
 			Password: userModel.Password,
 		}
@@ -102,7 +102,7 @@ func Login(c *fiber.Ctx) error {
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	claims := token.Claims.(jwt.MapClaims)
-	claims["username"] = ud.Username
+	claims["name"] = ud.Name
 	claims["user_id"] = ud.ID
 	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
 

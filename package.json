@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "api": "CompileDaemon -directory=apps/api/cmd/server -command=apps/api/cmd/server/server",
+    "api": "air",
     "cms": "pnpm run --filter=cms dev"
   },
   "keywords": [],

@@ -1,4 +1,4 @@
-import { DataProvider, fetchUtils } from "react-admin";
+import { DataProvider, fetchUtils, HttpError } from "react-admin";
 import { stringify } from "query-string";
 
 const apiUrl = "http://localhost:3000/api";
@@ -10,17 +10,21 @@ export const dataProvider: DataProvider = {
     const { field, order } = params.sort;
     const query = {
       sort: `${field} ${order}`,
-      range: JSON.stringify([(page - 1) * perPage, page * perPage - 1]),
+      limit: perPage,
+      offset: (page - 1) * perPage,
       filter: JSON.stringify(params.filter),
     };
     const url = `${apiUrl}/${resource}?${stringify(query)}`;
 
-    return httpClient(url).then(({ headers, json }) => (json));
+    return httpClient(url).then(({ headers, json }) => ({
+      data: json.data,
+      total: json.total,
+    }));
   },
 
   getOne: (resource, params) =>
     httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => ({
-      data: json,
+      data: json.data,
     })),
 
   getMany: (resource, params) => {
@@ -73,9 +77,15 @@ export const dataProvider: DataProvider = {
     httpClient(`${apiUrl}/${resource}`, {
       method: "POST",
       body: JSON.stringify(params.data),
-    }).then(({ json }) => ({
-      data: { ...params.data, id: json.id } as any,
-    })),
+    }).then(({ status, json }) => {
+      if (status < 200 || status >= 300) {
+        new HttpError((json && json.message) || "Unknown Error", status, json);
+      }
+      return {
+        data: { ...params.data, id: json.data.id } as any,
+        status: json.status,
+      };
+    }),
 
   delete: (resource, params) =>
     httpClient(`${apiUrl}/${resource}/${params.id}`, {

@@ -3,6 +3,7 @@ package handler
 import (
 	"app/database"
 	"app/model"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -33,7 +34,7 @@ func validUser(id string, p string) bool {
 	db := database.DB
 	var user model.User
 	db.First(&user, id)
-	if user.Username == "" {
+	if user.Name == "" {
 		return false
 	}
 	if !CheckPasswordHash(p, user.Password) {
@@ -43,15 +44,25 @@ func validUser(id string, p string) bool {
 }
 
 func GetUsers(c *fiber.Ctx) error {
-	sort := c.Query("sort")
-	page := c.Query("range")
-	filter := c.Query("filter")
-	fmt.Println(sort, page, filter)
+	req := new(model.Pagination)
+	if err := c.QueryParser(req); err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Invalid request params", "errors": err.Error()})
+	}
+	filter := new(model.UserFilter)
+	if err := json.Unmarshal([]byte(req.Filter), &filter); err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Invalid request params", "errors": err.Error()})
+	}
 	db := database.DB
 	var users []model.User
 	var count int64
-	
-	db.Order(sort).Find(&users)
+
+	if len(filter.Email) > 0 {
+		db = db.Where("email ILIKE ?", fmt.Sprintf("%%%s%%", filter.Email))
+	}
+	if len(filter.Name) > 0 {
+		db = db.Where("name ILIKE ?", fmt.Sprintf("%%%s%%", filter.Name))
+	}
+	db.Order(req.Sort).Limit(req.Limit).Offset(req.Offset).Find(&users)
 	db.Model(&model.User{}).Count(&count)
 
 	return c.JSON(fiber.Map{"data": users, "total": count})
@@ -64,19 +75,14 @@ func GetUser(c *fiber.Ctx) error {
 	var user model.User
 
 	db.Find(&user, id)
-	if user.Username == "" {
+	if user.Name == "" {
 		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "No user found with ID", "data": nil})
 	}
-	return c.JSON(fiber.Map{"status": "success", "message": "User found", "data": user})
+	return c.JSON(fiber.Map{"data": user})
 }
 
 // CreateUser new user
 func CreateUser(c *fiber.Ctx) error {
-	type NewUser struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-	}
-
 	db := database.DB
 	user := new(model.User)
 	if err := c.BodyParser(user); err != nil {
@@ -84,6 +90,7 @@ func CreateUser(c *fiber.Ctx) error {
 	}
 
 	validate := validator.New()
+	fmt.Println(user)
 	if err := validate.Struct(user); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid request body", "errors": err.Error()})
 	}
@@ -98,18 +105,13 @@ func CreateUser(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Couldn't create user", "errors": err.Error()})
 	}
 
-	newUser := NewUser{
-		Email:    user.Email,
-		Username: user.Username,
-	}
-
-	return c.JSON(fiber.Map{"status": "success", "message": "Created user", "data": newUser})
+	return c.JSON(fiber.Map{"status": "success", "message": "Created user", "data": user})
 }
 
 // UpdateUser update user
 func UpdateUser(c *fiber.Ctx) error {
 	type UpdateUserInput struct {
-		Names string `json:"names"`
+		Name string `json:"name"`
 	}
 	var uui UpdateUserInput
 	if err := c.BodyParser(&uui); err != nil {
@@ -126,7 +128,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	var user model.User
 
 	db.First(&user, id)
-	user.Names = uui.Names
+	user.Name = uui.Name
 	db.Save(&user)
 
 	return c.JSON(fiber.Map{"status": "success", "message": "User successfully updated", "data": user})
