@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 name: golang-template
 
 services:
@@ -9,10 +9,10 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
     ports:
-      - '127.0.0.1:${DB_PORT}:${DB_PORT}'
+      - "127.0.0.1:${DB_PORT}:${DB_PORT}"
     volumes:
       - postgres-db:/var/lib/postgresql/data
-    command: ['postgres', '-c', 'log_statement=all']
+    command: ["postgres", "-c", "log_statement=all"]
 
   pgAdmin:
     image: dpage/pgadmin4:8.4
@@ -21,13 +21,24 @@ services:
       PGADMIN_DEFAULT_PASSWORD: password
       PGADMIN_LISTEN_PORT: 5050
     ports:
-      - '127.0.0.1:5050:5050'
-    depends_on:
-      - db
+      - "127.0.0.1:5050:5050"
     volumes:
-        - pg-admin-data:/pgadmin4/servers.json
+      - pg-admin-data:/pgadmin4/servers.json
     logging:
       driver: none
+    depends_on:
+      - db
+
+  dex:
+    image: dexidp/dex:v2.39.0-alpine
+    ports:
+      - "127.0.0.1:5556:5556"
+      - "127.0.0.1:5558:5558"
+    volumes:
+      - ./.infra/dex-config.yaml:/etc/dex/cfg/config.yaml
+    command: ["/usr/local/bin/dex", "serve", "/etc/dex/cfg/config.yaml"]
+    depends_on:
+      - db
 
 volumes:
   postgres-db:

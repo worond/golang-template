@@ -52,15 +52,16 @@ func GetUsers(c *fiber.Ctx) error {
 	if err := json.Unmarshal([]byte(req.Filter), &filter); err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Invalid request params", "errors": err.Error()})
 	}
+
 	db := database.DB
 	var users []model.User
 	var count int64
 
 	if len(filter.Email) > 0 {
-		db = db.Where("email ILIKE ?", fmt.Sprintf("%%%s%%", filter.Email))
+		db = db.Where("email LIKE ?", fmt.Sprintf("%%%s%%", filter.Email))
 	}
 	if len(filter.Name) > 0 {
-		db = db.Where("name ILIKE ?", fmt.Sprintf("%%%s%%", filter.Name))
+		db = db.Where("name LIKE ?", fmt.Sprintf("%%%s%%", filter.Name))
 	}
 	db.Order(req.Sort).Limit(req.Limit).Offset(req.Offset).Find(&users)
 	db.Model(&model.User{}).Count(&count)
@@ -110,56 +111,43 @@ func CreateUser(c *fiber.Ctx) error {
 
 // UpdateUser update user
 func UpdateUser(c *fiber.Ctx) error {
+	id := c.Params("id")
 	type UpdateUserInput struct {
-		Name string `json:"name"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
 	}
 	var uui UpdateUserInput
 	if err := c.BodyParser(&uui); err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Review your input", "errors": err.Error()})
-	}
-	id := c.Params("id")
-	token := c.Locals("user").(*jwt.Token)
-
-	if !validToken(token, id) {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Invalid token id", "data": nil})
 	}
 
 	db := database.DB
 	var user model.User
 
 	db.First(&user, id)
+	if user.Name == "" {
+		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "No user found with ID", "data": nil})
+	}
 	user.Name = uui.Name
-	db.Save(&user)
+	user.Email = uui.Email
+	if err := db.Save(&user).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Couldn't update user", "errors": err.Error()})
+	}
 
 	return c.JSON(fiber.Map{"status": "success", "message": "User successfully updated", "data": user})
 }
 
 // DeleteUser delete user
 func DeleteUser(c *fiber.Ctx) error {
-	type PasswordInput struct {
-		Password string `json:"password"`
-	}
-	var pi PasswordInput
-	if err := c.BodyParser(&pi); err != nil {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Review your input", "errors": err.Error()})
-	}
 	id := c.Params("id")
-	token := c.Locals("user").(*jwt.Token)
-
-	if !validToken(token, id) {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Invalid token id", "data": nil})
-
-	}
-
-	if !validUser(id, pi.Password) {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Not valid user", "data": nil})
-
-	}
 
 	db := database.DB
 	var user model.User
 
 	db.First(&user, id)
+	if user.Name == "" {
+		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "No user found with ID", "data": nil})
+	}
 
 	db.Delete(&user)
 	return c.JSON(fiber.Map{"status": "success", "message": "User successfully deleted", "data": nil})

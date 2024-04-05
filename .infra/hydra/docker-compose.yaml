@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16.2-alpine3.19
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "127.0.0.1:${DB_PORT}:${DB_PORT}"
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+    command: ["postgres", "-c", "log_statement=all"]
+
+  pgAdmin:
+    image: dpage/pgadmin4:8.4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@email.com
+      PGADMIN_DEFAULT_PASSWORD: password
+      PGADMIN_LISTEN_PORT: 5050
+    ports:
+      - "127.0.0.1:5050:5050"
+    volumes:
+      - pg-admin-data:/pgadmin4/servers.json
+    logging:
+      driver: none
+    depends_on:
+      - db
+
+  hydra:
+    image: oryd/hydra:v2.2.0
+    ports:
+      - "4444:4444" # Public port
+      - "4445:4445" # Admin port
+      - "5555:5555" # Port for hydra token user
+    command: serve -c /etc/config/hydra/hydra.yml all --dev
+    volumes:
+      - type: bind
+        source: ./config.yaml
+        target: /etc/config/hydra/hydra.yml
+    environment:
+      - DSN=postgres://golang-template:password@db:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
+    depends_on:
+      - hydra-migrate
+
+  hydra-migrate:
+    image: oryd/hydra:v2.2.0
+    environment:
+      - DSN=postgres://golang-template:password@db:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
+    command: migrate -c /etc/config/hydra/hydra.yml sql -e --yes
+    volumes:
+      - type: bind
+        source: ./config.yaml
+        target: /etc/config/hydra/hydra.yml
+    depends_on:
+      - db
+
+  consent:
+    image: oryd/hydra-login-consent-node:v2.2.0
+    environment:
+      - HYDRA_ADMIN_URL=http://hydra:4445
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres-db:
+    name: postgres-db
+  pg-admin-data:
+    name: pg-admin-data

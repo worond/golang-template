@@ -1,4 +1,11 @@
-import { List, Datagrid, TextField, DateField } from "react-admin";
+import {
+  List,
+  Datagrid,
+  TextField,
+  DateField,
+  EditButton,
+  DeleteButton,
+} from "react-admin";
 import { userFilter } from "./userFilter";
 
 export const UserList = () => (
@@ -8,6 +15,10 @@ export const UserList = () => (
       <TextField source="email" />
       <TextField source="name" />
       <DateField source="created_at" />
+      <>
+        <EditButton />
+        <DeleteButton />
+      </>
     </Datagrid>
   </List>
 );
