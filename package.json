@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "api": "air",
-    "cms": "pnpm run --filter=cms dev"
+    "cms": "PORT=3001 pnpm run --filter=cms dev"
   },
   "keywords": [],
   "author": "",

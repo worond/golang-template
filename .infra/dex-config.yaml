@@ -125,7 +125,7 @@ telemetry:
 staticClients:
   - id: example-app
     redirectURIs:
-      - "http://localhost:5173/auth-callback"
+      - "http://localhost:3001/auth-callback"
     name: "Example App"
     secret: ZXhhbXBsZS1hcHAtc2VjcmV0
 #  - id: example-device-client
@@ -157,7 +157,7 @@ enablePasswordDB: true
 #
 # If this option isn't chosen users may be added through the gRPC API.
 staticPasswords:
-  - email: "admin@example.com"
+  - email: "admin@email.com"
     # bcrypt hash of the string "password": $(echo password | htpasswd -BinC 10 admin | cut -d: -f2)
     hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
     username: "admin"
