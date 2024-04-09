@@ -12,7 +12,7 @@ import (
 func SetupRoutes(app *fiber.App) {
 	// Middleware
 	api := app.Group("/api", logger.New())
-	api.Get("/", handler.Hello)
+	api.Get("/", handler.Health)
 
 	// Auth
 	auth := api.Group("/auth")
@@ -31,6 +31,6 @@ func SetupRoutes(app *fiber.App) {
 	product := api.Group("/product")
 	product.Get("/", handler.GetAllProducts)
 	product.Get("/:id", handler.GetProduct)
-	product.Post("/", middleware.Protected(), handler.CreateProduct)
-	product.Delete("/:id", middleware.Protected(), handler.DeleteProduct)
+	product.Post("/", middleware.Protected, handler.CreateProduct)
+	product.Delete("/:id", middleware.Protected, handler.DeleteProduct)
 }
