@@ -17,6 +17,7 @@ func SetupRoutes(app *fiber.App) {
 	// Auth
 	auth := api.Group("/auth")
 	auth.Post("/login", handler.Login)
+	auth.Post("/token", handler.GetToken)
 
 	// User
 	user := api.Group("/users")

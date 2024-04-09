@@ -1,6 +1,7 @@
 package main
 
 import (
+	"app/config"
 	"app/database"
 	"app/router"
 	"log"
@@ -10,6 +11,8 @@ import (
 )
 
 func init() {
+	config.LoadEnvVars()
+	config.InitOAuth2Config()
 	database.ConnectDB()
 }
 

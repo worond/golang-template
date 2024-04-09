@@ -4,7 +4,9 @@ import (
 	"app/config"
 	"app/database"
 	"app/model"
+	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/mail"
 	"time"
@@ -14,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
 )
 
 // CheckPasswordHash compare password with hash
@@ -112,4 +115,26 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"status": "success", "message": "Success login", "data": t})
+}
+
+func GetToken(c *fiber.Ctx) error {
+	type ExchangeInput struct {
+		Code         string `json:"code"`
+		CodeVerifier string `json:"code_verifier"`
+	}
+
+	input := new(ExchangeInput)
+	if err := c.BodyParser(input); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Error on login request", "errors": err.Error()})
+	}
+	fmt.Println(input)
+	oauth2Conf := config.OAuth2Config
+
+	token, err := oauth2Conf.Exchange(context.Background(), input.Code, oauth2.VerifierOption(input.CodeVerifier))
+	if err != nil {
+		fmt.Println(err)
+		return c.Status(403).JSON(fiber.Map{"status": "error", "message": "Code-Token Exchange Failed", "token": nil})
+	}
+
+	return c.JSON(token)
 }

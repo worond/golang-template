@@ -1,26 +1,26 @@
-import { AuthProvider } from "react-admin";
-import { UserManager } from "oidc-client-ts";
+import { AuthProvider } from 'react-admin';
+import { UserManager } from 'oidc-client-ts';
 
-import { config } from "./configProvider";
+import { config } from './configProvider';
 
 const issuer = config.OIDC_ISSUER;
 const clientId = config.OIDC_CLIENT_ID;
 const redirectUri = config.OIDC_REDIRECT_URI;
-const apiUri = config.API_URL;
+const apiUrl = config.API_URL;
 
 const userManager = new UserManager({
   authority: issuer,
   client_id: clientId,
   redirect_uri: redirectUri,
-  response_type: "code",
-  scope: "openid email profile", // Allow to retrieve the email and user name later api side
+  response_type: 'code',
+  scope: 'openid email profile', // Allow to retrieve the email and user name later api side
 });
 
 const getProfileFromToken = (tokenJson: string | null) => {
-  const token = JSON.parse(tokenJson || "");
-  const jwt = JSON.parse(atob(token.id_token.split(".")[1]));
+  const token = JSON.parse(tokenJson || '');
+  const jwt = JSON.parse(atob(token.access_token.split('.')[1]));
 
-  return { id: "my-profile", ...jwt };
+  return { id: 'my-profile', ...jwt };
 };
 
 const cleanup = () => {
@@ -39,15 +39,15 @@ export const authProvider: AuthProvider = {
     return; // Do not return anything, the login is still loading
   },
   logout: () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem('token');
     return Promise.resolve();
   },
   checkError: () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem('token');
     return Promise.resolve();
   },
   checkAuth: () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token');
 
     if (!token) {
       return Promise.reject();
@@ -63,7 +63,7 @@ export const authProvider: AuthProvider = {
   },
   getPermissions: () => Promise.resolve(),
   getIdentity: () => {
-    const token = window.localStorage.getItem("token");
+    const token = window.localStorage.getItem('token');
     const profile = getProfileFromToken(token);
 
     return Promise.resolve({
@@ -73,37 +73,36 @@ export const authProvider: AuthProvider = {
     });
   },
   handleCallback: async () => {
-    console.log('123123')
-    // // We came back from the issuer with ?code infos in query params
-    // const { searchParams } = new URL(window.location.href);
-    // const code = searchParams.get("code");
-    // const state = searchParams.get("state");
+    // We came back from the issuer with ?code infos in query params
+    const { searchParams } = new URL(window.location.href);
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
 
-    // // oidc-client uses localStorage to keep a temporary state
-    // // between the two redirections. But since we need to send it to the API
-    // // we have to retrieve it manually
-    // const stateKey = `oidc.${state}`;
-    // const { code_verifier } = JSON.parse(
-    //   localStorage.getItem(stateKey) || "{}"
-    // );
+    // oidc-client uses localStorage to keep a temporary state
+    // between the two redirections. But since we need to send it to the API
+    // we have to retrieve it manually
+    const stateKey = `oidc.${state}`;
+    const { code_verifier } = JSON.parse(
+      localStorage.getItem(stateKey) || "{}"
+    );
 
-    // // Transform the code to a token via the API
-    // const response = await fetch(`${apiUri}/code-to-token`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ code: code, code_verifier }),
-    // });
+    // Transform the code to a token via the API
+    const response = await fetch(`${apiUrl}/auth/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: code, code_verifier }),
+    });
 
-    // if (!response.ok) {
-    //   cleanup();
-    //   return Promise.reject();
-    // }
+    if (!response.ok) {
+      cleanup();
+      return Promise.reject();
+    }
 
-    // const token = await response.json();
+    const token = await response.json();
 
-    // localStorage.setItem("token", JSON.stringify(token));
-    // userManager.clearStaleState();
-    // cleanup();
-    // return Promise.resolve();
+    localStorage.setItem("token", JSON.stringify(token));
+    userManager.clearStaleState();
+    cleanup();
+    return Promise.resolve();
   },
 };

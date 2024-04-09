@@ -1,9 +1,9 @@
 package database
 
 import (
-	"app/config"
 	"app/model"
 	"fmt"
+	"os"
 	"strconv"
 
 	"gorm.io/driver/postgres"
@@ -13,7 +13,7 @@ import (
 // ConnectDB connect to db
 func ConnectDB() {
 	var err error
-	p := config.GetString("DB_PORT")
+	p := os.Getenv("DB_PORT")
 	port, err := strconv.ParseUint(p, 10, 32)
 
 	if err != nil {
@@ -22,11 +22,11 @@ func ConnectDB() {
 
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		config.GetString("DB_HOST"),
+		os.Getenv("DB_HOST"),
 		port,
-		config.GetString("DB_USER"),
-		config.GetString("DB_PASSWORD"),
-		config.GetString("DB_NAME"),
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_NAME"),
 	)
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
