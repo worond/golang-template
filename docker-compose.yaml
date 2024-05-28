@@ -42,6 +42,4 @@ services:
 
 volumes:
   postgres-db:
-    name: postgres-db
   pg-admin-data:
-    name: pg-admin-data
